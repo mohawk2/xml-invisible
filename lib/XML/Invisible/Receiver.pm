@@ -20,9 +20,7 @@ sub gotrule {
   $param = $self->flatten($param);
   my %ret = (
     nodename => $rule,
-    children => [],
     type => 'element',
-    attributes => [],
   );
   for (@$param) {
     if (!ref $_ or $_->{type} eq 'element') {
