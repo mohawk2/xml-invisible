@@ -39,11 +39,8 @@ sub _item2elt {
   my ($item) = @_;
   die "Unknown item '$item' passed" if ref $item ne 'HASH';
   my $elt = XML::LibXML::Element->new($item->{nodename});
-  my @attrs = @{ $item->{attributes} || [] };
-  while (@attrs) {
-    my ($k, $v) = splice @attrs, 0, 2;
-    $elt->setAttribute($k, $v);
-  }
+  my $attrs = $item->{attributes} || {};
+  $elt->setAttribute($_, $attrs->{$_}) for keys %$attrs;
   for (@{ $item->{children} || [] }) {
     if (!ref) {
       $elt->appendTextNode($_);

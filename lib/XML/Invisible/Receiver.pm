@@ -26,7 +26,7 @@ sub gotrule {
     if (!ref $_ or $_->{type} eq 'element') {
       push @{ $ret{children} }, $_;
     } elsif ($_->{type} eq 'attr') {
-      push @{ $ret{attributes} }, $_->{nodename}, join '', _get_values($_);
+      $ret{attributes}{$_->{nodename}} = join '', _get_values($_);
     } else {
       die "Unknown entity type '$_->{type}'";
     }
@@ -69,7 +69,8 @@ The AST returned represents an XML document with a hash-ref with these keys:
 
 =item attributes
 
-An array-ref with pairs of name, value (in order to preserve ordering).
+A hash-ref mapping name to value, since XML attributes can each only
+occur once on an element, and the ordering is semantically meaningless.
 
 =item children
 
