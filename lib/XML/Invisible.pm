@@ -8,7 +8,7 @@ use Pegex::Parser;
 use XML::Invisible::Receiver;
 use XML::LibXML;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our @EXPORT_OK = qw(make_parser ast2xml);
 
 use constant DEBUG => $ENV{XML_INVISIBLE_DEBUG};
