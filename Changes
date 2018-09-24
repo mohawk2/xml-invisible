@@ -1,5 +1,8 @@
 Revision history for XML::Invisible
 
+0.03 Mon 24 Sep 06:03:10 BST 2018
+ - attributes hash not array
+
 0.02 Mon 24 Sep 05:46:54 BST 2018
  - autovivify children and attributes so no empty arrays
 
