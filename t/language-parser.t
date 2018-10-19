@@ -25,4 +25,16 @@ EOF
   'arithmetic',
 );
 
+run_test(
+  <<'EOF',
+exprs: expr+
+expr: expr1 | expr2
+expr1: /(a)/
+expr2: /(b)/
+EOF
+  'ab',
+  '<exprs><expr><expr1>a</expr1></expr><expr><expr2>b</expr2></expr></exprs>',
+  'pre-flatten',
+);
+
 done_testing;
