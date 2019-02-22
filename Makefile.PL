@@ -40,7 +40,6 @@ WriteMakefile(
     prereqs => {
       develop => {
         requires => {
-          'Test::CheckManifest' => '0.9',
           'Test::Pod::Coverage' => '1.08',
           'Test::Pod' => '1.22',
           'Pod::Markdown' => 0,
