@@ -1,4 +1,4 @@
-Revision history for XML::Invisible
+- make XML::LibXML be only suggested, not required
 
 0.04 Fri 19 Oct 03:45:53 BST 2018
  - make flatten work right on single rule with +
