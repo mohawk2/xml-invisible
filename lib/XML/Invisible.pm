@@ -7,7 +7,7 @@ use Pegex::Grammar;
 use Pegex::Parser;
 use XML::Invisible::Receiver;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 our @EXPORT_OK = qw(make_parser ast2xml);
 
 use constant DEBUG => $ENV{XML_INVISIBLE_DEBUG};
