@@ -96,7 +96,7 @@ document, it will return an abstract syntax tree (AST), of the general form:
 
 Arguments:
 
-- an "invisible XML" grammar specification, in Pegex format
+- an "invisible XML" Pegex grammar specification, OR a [Pegex::Grammar](https://metacpan.org/pod/Pegex::Grammar) object
 
 See [XML::Invisible::Receiver](https://metacpan.org/pod/XML::Invisible::Receiver) for more.
 

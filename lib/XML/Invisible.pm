@@ -13,8 +13,8 @@ our @EXPORT_OK = qw(make_parser ast2xml);
 use constant DEBUG => $ENV{XML_INVISIBLE_DEBUG};
 
 sub make_parser {
-  my ($grammar_text) = @_;
-  my $grammar = Pegex::Grammar->new(text => $grammar_text);
+  my ($grammar) = @_;
+  $grammar = Pegex::Grammar->new(text => $grammar) if !ref $grammar;
   my $parser = Pegex::Parser->new(
     grammar => $grammar,
     receiver => XML::Invisible::Receiver->new,
@@ -158,7 +158,7 @@ Arguments:
 
 =over
 
-=item an "invisible XML" grammar specification, in Pegex format
+=item an "invisible XML" Pegex grammar specification, OR a L<Pegex::Grammar> object
 
 =back
 
