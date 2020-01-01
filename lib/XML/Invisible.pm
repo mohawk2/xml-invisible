@@ -8,7 +8,7 @@ use Pegex::Parser;
 use XML::Invisible::Receiver;
 
 our $VERSION = '0.06';
-our @EXPORT_OK = qw(make_parser ast2xml);
+our @EXPORT_OK = qw(make_parser ast2xml make_canonicaliser);
 
 use constant DEBUG => $ENV{XML_INVISIBLE_DEBUG};
 
@@ -24,6 +24,99 @@ sub make_parser {
     my ($ixml_text) = @_;
     $parser->parse($ixml_text);
   };
+}
+
+sub make_canonicaliser {
+  my ($grammar_text) = @_;
+  require Pegex::Compiler;
+  require Pegex::Grammar::Atoms;
+  my $grammar_tree = Pegex::Compiler->new->parse($grammar_text)->tree;
+  my $toprule = $grammar_tree->{'+toprule'};
+  my $atoms = _atoms2canonical(Pegex::Grammar::Atoms->atoms);
+  sub {
+    my ($ast) = @_;
+    my @results = _extract_canonical($atoms, $ast, $grammar_tree, $toprule);
+    return undef if grep !defined, @results;
+    join '', @results;
+  };
+}
+
+my %ATOM2SPECIAL = (
+  ALL => "",
+  BLANK => " ",
+  BREAK => "\n",
+  BS => "\x08",
+  CONTROL => "\x00",
+  CR => "\r",
+  DOS => "\r\n",
+  EOL => "\n",
+  EOS => "",
+  FF => "\x0C",
+  HICHAR => "\x7f",
+  NL => "\n",
+  TAB => "\t",
+  WORD => "a",
+  WS => " ",
+  _ => "",
+  __ => " ",
+  ws => "",
+  ws1 => "",
+  ws2 => " ",
+);
+sub _atoms2canonical {
+  my ($atoms) = @_;
+  my %lookup;
+  for my $atom (keys %$atoms) {
+    my $c = $atoms->{$atom};
+    if (exists $ATOM2SPECIAL{$atom}) {
+      $c = $ATOM2SPECIAL{$atom};
+    } elsif ($c =~ s/^\\//) {
+      # all good
+    } elsif ($c =~ s/^\[//) {
+      $c = substr $c, 0, 1;
+    }
+    $lookup{$atom} = $c;
+  }
+  \%lookup;
+}
+
+sub _extract_canonical {
+  my ($atoms, $elt, $grammar_tree, $elt_sought, $grammar_frag) = @_;
+  $grammar_frag ||= $grammar_tree->{$elt_sought};
+  return undef if !ref $elt; # just text node - not valid
+  return undef if defined($elt_sought) and $elt_sought ne $elt->{nodename}; # non-match
+  if ($grammar_frag->{'.rgx'}) {
+    # RE, so parent of text nodes
+    return $elt->{children} ? join('', @{$elt->{children}}) : $elt->{nodename};
+  }
+  if (my $all = $grammar_frag->{'.all'}) {
+    # sequence of productions
+    return undef if @$all != @{$elt->{children}};
+    my @results;
+    for my $i (0..$#$all) {
+      my @partial = _extract_canonical(
+        $atoms, $elt->{children}[$i], $grammar_tree, undef, $all->[$i],
+      );
+      return undef if grep !defined, @partial; # any non-match
+      push @results, @partial;
+    }
+    return @results;
+  } elsif (my $ref = $grammar_frag->{'.ref'}) {
+    return $atoms->{$ref} if exists $atoms->{$ref};
+    return undef if $elt->{nodename} ne $ref;
+    my $new_frag = $grammar_tree->{$ref};
+    if ($new_frag->{'.ref'}) {
+      # this one is just a single-child empty if it's a match
+      return undef if @{$elt->{children}} != 1;
+      return _extract_canonical(
+        $atoms, $elt->{children}[0], $grammar_tree, $new_frag->{'.ref'}, $new_frag,
+      );
+    }
+    # treat ourselves as if we're the ref-ed to thing
+    return _extract_canonical(
+      $atoms, $elt, $grammar_tree, $ref, $new_frag,
+    );
+  }
 }
 
 my $xml_loaded = 0;
@@ -93,6 +186,14 @@ XML::Invisible - transform "invisible XML" documents into XML using a grammar
   perl -MXML::Invisible=make_parser,ast2xml -e \
     'print ast2xml(make_parser(join "", <>)->("(a+b)"))->toStringC14N(1)' \
     examples/arith-grammar.ixml | xml_pp
+
+  # canonicalise a document
+  use XML::Invisible qw(make_parser make_canonicaliser);
+  my $ixml_grammar = from_file('examples/arith-grammar.ixml');
+  my $transformer = make_parser($ixml_grammar);
+  my $ast = $transformer->(from_file($ixml_input));
+  my $canonicaliser = make_canonicaliser($ixml_grammar);
+  my $canonical = $canonicaliser->($ast);
 
 =head1 DESCRIPTION
 
@@ -176,6 +277,32 @@ Arguments:
 =over
 
 =item an AST from L<XML::Invisible::Receiver>
+
+=back
+
+=head2 make_canonicaliser
+
+Exportable. Returns a function that when called with an AST as produced
+from a document by a L</make_parser>, returns a canonical version of
+the original document, or C<undef> if it failed.
+
+Arguments:
+
+=over
+
+=item an XML::Invisible grammar
+
+=back
+
+It uses a few heuristics:
+
+=over
+
+=item literals that are 0-1 (C<?>) or any number (C<*>) will be omitted
+
+=item literals that are at least one (C<+>) will be inserted once
+
+=item literal whitespace will be treated specially
 
 =back
 
