@@ -1,3 +1,5 @@
+- switch to use Test::Snapshot
+
 0.06 2020-01-01
 - stop putting element "type" in output
 - make_parser can take a Pegex::Grammar object
