@@ -147,15 +147,10 @@ document, it will return an abstract syntax tree (AST), of the general form:
 
   {
     nodename => 'expr',
-    type => 'element',
     attributes => { open => '(', sign => '+', close => ')' },
     children => [
-      {
-        nodename => 'left',
-        type => 'element',
-        attributes => { name => 'a' },
-      },
-      { nodename => 'right', type => 'element', children => [ 'b' ] },
+      { nodename => 'left', attributes => { name => 'a' } },
+      { nodename => 'right', children => [ 'b' ] },
     ],
   }
 
