@@ -12,17 +12,10 @@ sub gotrule {
   my $rule = $parser->{rule};
   my $parentrule = $parser->{parent};
   my ($attr, $flatten) = @{$parentrule}{qw(-wrap -flat)};
-  die "Can't have both attribute (+) and flatten (-) on same node"
-    if $attr and $flatten;
-  if ($flatten) {
-    return $param;
-  }
+  return $param if $flatten;
   $param = [ $param ] if ref $param ne 'ARRAY';
   $param = $self->flatten($param);
-  my %ret = (
-    nodename => $rule,
-    type => 'element',
-  );
+  my %ret = (nodename => $rule, type => ($attr ? 'attr' : 'element'));
   for (@$param) {
     if (!ref $_ or !$_->{type}) {
       push @{ $ret{children} }, $_;
@@ -32,7 +25,6 @@ sub gotrule {
       die "Unknown entity type '$_->{type}'";
     }
   }
-  $ret{type} = 'attr' if $attr;
   delete $ret{type} if $ret{type} eq 'element';
   \%ret;
 }
