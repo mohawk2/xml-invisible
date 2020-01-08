@@ -22,7 +22,7 @@ sub gotrule {
     } elsif ($_->{type} eq 'attr') {
       $ret{attributes}{$_->{nodename}} = join '', _get_values($_);
     } else {
-      die "Unknown entity type '$_->{type}'";
+      die "Unknown entity type '$_->{type}'"; # uncoverable statement
     }
   }
   delete $ret{type} if $ret{type} eq 'element';
