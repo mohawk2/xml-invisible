@@ -83,19 +83,27 @@ sub _atoms2canonical {
 sub _extract_canonical {
   my ($atoms, $elt, $grammar_tree, $elt_sought, $grammar_frag) = @_;
   $grammar_frag ||= $grammar_tree->{$elt_sought};
-  return undef if !ref $elt; # just text node - not valid
-  return undef if defined($elt_sought) and $elt_sought ne $elt->{nodename}; # non-match
+  if (defined($elt)) {
+    return undef if !ref $elt; # just text node - not valid
+    return undef if defined($elt_sought) and $elt_sought ne $elt->{nodename};
+  }
   if ($grammar_frag->{'.rgx'}) {
     # RE, so parent of text nodes
     return $elt->{children} ? join('', @{$elt->{children}}) : $elt->{nodename};
   }
   if (my $all = $grammar_frag->{'.all'}) {
     # sequence of productions
-    return undef if @$all != @{$elt->{children}};
-    my @results;
+    my ($childcount, @results) = (0);
     for my $i (0..$#$all) {
+      my $child = $elt->{children}[$childcount];
+      my $all_frag = $all->[$i];
+      if ($all_frag->{'-skip'}) {
+        $child = undef;
+      } else {
+        $childcount++;
+      }
       my @partial = _extract_canonical(
-        $atoms, $elt->{children}[$i], $grammar_tree, undef, $all->[$i],
+        $atoms, $child, $grammar_tree, undef, $all_frag,
       );
       return undef if grep !defined, @partial; # any non-match
       push @results, @partial;
@@ -103,13 +111,14 @@ sub _extract_canonical {
     return @results;
   } elsif (my $ref = $grammar_frag->{'.ref'}) {
     return $atoms->{$ref} if exists $atoms->{$ref};
-    return undef if $elt->{nodename} ne $ref;
+    return undef if defined($elt) and $elt->{nodename} ne $ref;
     my $new_frag = $grammar_tree->{$ref};
     if ($new_frag->{'.ref'}) {
       # this one is just a single-child empty if it's a match
-      return undef if @{$elt->{children}} != 1;
+      return undef if defined($elt) and @{$elt->{children}} != 1;
+      my $child = defined($elt) ? $elt->{children}[0] : undef;
       return _extract_canonical(
-        $atoms, $elt->{children}[0], $grammar_tree, $new_frag->{'.ref'}, $new_frag,
+        $atoms, $child, $grammar_tree, $new_frag->{'.ref'}, $new_frag,
       );
     }
     # treat ourselves as if we're the ref-ed to thing
