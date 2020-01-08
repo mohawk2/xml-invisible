@@ -4,10 +4,7 @@ matrix:
   include:
     - perl: "5.8.3"
     - perl: "5.26"
-      env: RELEASE_TESTING=1
-    # separate from release testing else cover_db blows up xt/manifest.t
-    - perl: "5.26"
-      env: COVERAGE=1
+      env: RELEASE_TESTING=1 COVERAGE=1
 before_install:
   - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
   - source ~/travis-perl-helpers/init
@@ -15,13 +12,13 @@ before_install:
   - build-perl
   - local-lib cache
   - perl -V
-  - cpan-install ExtUtils::MakeMaker~6.64 # for TEST_REQUIRES
-  - if [ "$RELEASE_TESTING" = 1 ]; then cpan-install --deps; prove -l xt; fi
-  - build-dist
-  - cd $BUILD_DIR             # $BUILD_DIR is set by the build-dist command
 install:
+  - cpan-install ExtUtils::MakeMaker~6.64 # for TEST_REQUIRES
   - cpan-install --deps       # installs prereqs, including recommends
   - cpan-install --coverage   # installs converage prereqs, if enabled
+  - if [ "$RELEASE_TESTING" = 1 ]; then prove -l xt; fi
+  - build-dist
+  - cd $BUILD_DIR             # $BUILD_DIR is set by the build-dist command
 before_script:
   - coverage-setup
 script:
