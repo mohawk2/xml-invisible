@@ -93,9 +93,16 @@ sub _extract_canonical {
       return $value;
     }
   }
-  if ($grammar_frag->{'.rgx'}) {
+  if (my $rgx = $grammar_frag->{'.rgx'}) {
     # RE, so parent of text nodes
-    return $elt->{children} ? join('', @{$elt->{children}}) : $elt->{nodename};
+    if (defined $elt) {
+      return join('', @{$elt->{children}}) if $elt->{children};
+      return $elt->{nodename};
+    }
+    # or just a bare regex, which is a literal "canonical" representation
+    return undef if $rgx =~ /^\(/; # out of our league
+    $rgx =~ s#\\##g;
+    return $rgx;
   }
   if (my $all = $grammar_frag->{'.all'}) {
     # sequence of productions
@@ -142,6 +149,19 @@ sub _extract_canonical {
     return _extract_canonical(
       $atoms, $elt, $grammar_tree, $ref, $new_frag, $attrs,
     );
+  } elsif (my $any = $grammar_frag->{'.any'}) {
+    # choice, pick first successful
+    for my $i (0..$#$any) {
+      my $any_frag = $any->[$i];
+      my @partial = _extract_canonical(
+        $atoms, $elt, $grammar_tree,
+        (defined($elt) ? $elt->{nodename} : $elt),
+        $any_frag, $attrs,
+      );
+      next if grep !defined, @partial; # any non-match
+      return @partial;
+    }
+    return undef;
   }
 }
 
@@ -328,7 +348,18 @@ It uses a few heuristics:
 
 =item literals that are at least one (C<+>) will be inserted once
 
-=item literal whitespace will be treated specially
+=item if an "any" group is given, the first one that matches will be selected
+
+This last one means that if you want a canonical representation that is
+not the bare minimum, provide that as a literal first choice (see the
+C<assign> rule below - while it will accept any or no whitespace, the
+"canonical" version is given):
+
+  expr: target .assign source
+  target: +name
+  assign: ' = ' | (- EQUAL -)
+  source: -name
+  name: /( ALPHA (: ALPHA | DIGIT )* )/
 
 =back
 

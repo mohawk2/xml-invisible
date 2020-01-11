@@ -78,4 +78,17 @@ EOF
   'flatten and attr',
 );
 
+run_test(
+  <<'EOF',
+expr: target .assign source
+target: +name
+assign: ' = ' | (- EQUAL -)
+source: -name
+name: /( ALPHA (: ALPHA | DIGIT )* )/
+EOF
+  'a= b',
+  'a = b',
+  'with canonical first',
+);
+
 done_testing;
