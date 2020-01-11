@@ -84,6 +84,7 @@ sub _extract_canonical {
   my ($atoms, $elt, $grammar_tree, $elt_sought, $grammar_frag, $attrs) = @_;
   $grammar_frag ||= $grammar_tree->{$elt_sought};
   $attrs ||= {};
+  $attrs = { %$attrs, %{ $elt->{attributes} || {} } } if ref $elt;
   if (defined($elt)) {
     return $elt if !ref $elt; # just text node - trust here for good reason
     return undef if defined($elt_sought) and $elt_sought ne $elt->{nodename};
@@ -102,13 +103,17 @@ sub _extract_canonical {
     for my $i (0..$#$all) {
       my $child = $elt->{children}[$childcount];
       my $all_frag = $all->[$i];
+      my $new_elt_sought = undef;
       if ($all_frag->{'-skip'}) {
         $child = undef;
+      } elsif ($all_frag->{'-wrap'}) {
+        $child = undef;
+        $new_elt_sought = $all_frag->{'.ref'};
       } else {
         $childcount++;
       }
       my @partial = _extract_canonical(
-        $atoms, $child, $grammar_tree, undef, $all_frag, $attrs,
+        $atoms, $child, $grammar_tree, $new_elt_sought, $all_frag, $attrs,
       );
       return undef if grep !defined, @partial; # any non-match
       push @results, @partial;
