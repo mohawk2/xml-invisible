@@ -81,11 +81,16 @@ sub _atoms2canonical {
 }
 
 sub _extract_canonical {
-  my ($atoms, $elt, $grammar_tree, $elt_sought, $grammar_frag) = @_;
+  my ($atoms, $elt, $grammar_tree, $elt_sought, $grammar_frag, $attrs) = @_;
   $grammar_frag ||= $grammar_tree->{$elt_sought};
+  $attrs ||= {};
   if (defined($elt)) {
     return undef if !ref $elt; # just text node - not valid
     return undef if defined($elt_sought) and $elt_sought ne $elt->{nodename};
+  } else {
+    if (defined($elt_sought) and defined(my $value = $attrs->{$elt_sought})) {
+      return $value;
+    }
   }
   if ($grammar_frag->{'.rgx'}) {
     # RE, so parent of text nodes
@@ -103,7 +108,7 @@ sub _extract_canonical {
         $childcount++;
       }
       my @partial = _extract_canonical(
-        $atoms, $child, $grammar_tree, undef, $all_frag,
+        $atoms, $child, $grammar_tree, undef, $all_frag, $attrs,
       );
       return undef if grep !defined, @partial; # any non-match
       push @results, @partial;
@@ -113,17 +118,24 @@ sub _extract_canonical {
     return $atoms->{$ref} if exists $atoms->{$ref};
     return undef if defined($elt) and $elt->{nodename} ne $ref;
     my $new_frag = $grammar_tree->{$ref};
-    if ($new_frag->{'.ref'}) {
-      # this one is just a single-child empty if it's a match
-      return undef if defined($elt) and @{$elt->{children}} != 1;
-      my $child = defined($elt) ? $elt->{children}[0] : undef;
+    if (my $new_ref = $new_frag->{'.ref'}) {
+      my $child;
+      my $new_attrs = { %$attrs };
+      if (!defined($elt)) {
+        $child = undef;
+      } elsif ($elt->{children}) {
+        return undef if @{$elt->{children}} != 1;
+        $child = $elt->{children}[0];
+      } elsif ($new_frag->{'-wrap'}) {
+        $new_attrs = { %$new_attrs, %{ $elt->{attributes} } };
+      }
       return _extract_canonical(
-        $atoms, $child, $grammar_tree, $new_frag->{'.ref'}, $new_frag,
+        $atoms, $child, $grammar_tree, $new_ref, $new_frag, $new_attrs,
       );
     }
     # treat ourselves as if we're the ref-ed to thing
     return _extract_canonical(
-      $atoms, $elt, $grammar_tree, $ref, $new_frag,
+      $atoms, $elt, $grammar_tree, $ref, $new_frag, $attrs,
     );
   }
 }

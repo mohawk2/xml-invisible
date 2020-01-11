@@ -38,4 +38,17 @@ EOF
   'skip',
 );
 
+run_test(
+  <<'EOF',
+expr: target .assign source
+target: +name
+assign: (- EQUAL -)
+source: name
+name: /( ALPHA (: ALPHA | DIGIT )* )/
+EOF
+  'a = b',
+  'a=b',
+  'attr',
+);
+
 done_testing;
