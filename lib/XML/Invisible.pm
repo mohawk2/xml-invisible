@@ -85,7 +85,7 @@ sub _extract_canonical {
   $grammar_frag ||= $grammar_tree->{$elt_sought};
   $attrs ||= {};
   if (defined($elt)) {
-    return undef if !ref $elt; # just text node - not valid
+    return $elt if !ref $elt; # just text node - trust here for good reason
     return undef if defined($elt_sought) and $elt_sought ne $elt->{nodename};
   } else {
     if (defined($elt_sought) and defined(my $value = $attrs->{$elt_sought})) {
